@@ -1,8 +1,4 @@
-# 智能协同云图库项目介绍
-
-## 一分钟了解项目
-
-请观看项目介绍和上线教程视频：https://www.bilibili.com/video/BV1akwGeSERK
+# K智协图汇项目介绍
 
 ## 项目介绍
 
