@@ -53,7 +53,8 @@
 <script lang="ts" setup>
 import { computed, h, ref } from 'vue'
 import { HomeOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons-vue'
-import { MenuProps, message } from 'ant-design-vue'
+import { message } from 'ant-design-vue'
+import type { MenuProps } from 'ant-design-vue'
 import { useRouter } from 'vue-router'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
 import { userLogoutUsingPost } from '@/api/userController.ts'
@@ -99,7 +100,7 @@ const originItems = [
 const filterMenus = (menus = [] as MenuProps['items']) => {
   return menus?.filter((menu) => {
     // 管理员才能看到 /admin 开头的菜单
-    if (menu?.key?.startsWith('/admin')) {
+    if (typeof menu?.key === 'string' && menu.key.startsWith('/admin')) {
       const loginUser = loginUserStore.loginUser
       if (!loginUser || loginUser.userRole !== 'admin') {
         return false
@@ -121,7 +122,7 @@ router.afterEach((to, from, next) => {
 })
 
 // 路由跳转事件
-const doMenuClick = ({ key }) => {
+const doMenuClick = ({ key }: { key: string }) => {
   router.push({
     path: key,
   })
@@ -146,15 +147,124 @@ const doLogout = async () => {
 #globalHeader .title-bar {
   display: flex;
   align-items: center;
+  transition: all 0.3s ease;
+}
+
+#globalHeader .title-bar:hover {
+  transform: scale(1.02);
 }
 
 .title {
-  color: black;
+  color: #2c3e50;
   font-size: 18px;
+  font-weight: 700;
   margin-left: 16px;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: none;
 }
 
 .logo {
   height: 48px;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+.logo:hover {
+  transform: rotate(5deg) scale(1.05);
+  filter: drop-shadow(0 6px 12px rgba(0, 0, 0, 0.15));
+}
+
+#globalHeader :deep(.ant-menu) {
+  background: transparent;
+  border-bottom: none;
+}
+
+#globalHeader :deep(.ant-menu-item) {
+  border-radius: 8px;
+  margin: 0 4px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+}
+
+#globalHeader :deep(.ant-menu-item:hover) {
+  background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+#globalHeader :deep(.ant-menu-item-selected) {
+  background: linear-gradient(45deg, rgba(102, 126, 234, 0.15), rgba(118, 75, 162, 0.15));
+  color: #667eea;
+  font-weight: 600;
+  border-radius: 8px;
+}
+
+#globalHeader :deep(.ant-menu-item a) {
+  color: inherit;
+  text-decoration: none;
+}
+
+.user-login-status {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.user-login-status :deep(.ant-btn) {
+  border-radius: 20px;
+  background: linear-gradient(45deg, #667eea, #764ba2);
+  border: none;
+  font-weight: 500;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.user-login-status :deep(.ant-btn:hover) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.user-login-status :deep(.ant-avatar) {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.user-login-status :deep(.ant-avatar:hover) {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.user-login-status :deep(.ant-space) {
+  cursor: pointer;
+  padding: 8px 12px;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.user-login-status :deep(.ant-space:hover) {
+  background: rgba(102, 126, 234, 0.1);
+  transform: translateY(-1px);
+}
+
+.user-login-status :deep(.ant-dropdown-menu) {
+  border-radius: 12px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(20px);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.user-login-status :deep(.ant-dropdown-menu-item) {
+  border-radius: 8px;
+  margin: 4px;
+  transition: all 0.3s ease;
+}
+
+.user-login-status :deep(.ant-dropdown-menu-item:hover) {
+  background: linear-gradient(45deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1));
 }
 </style>
