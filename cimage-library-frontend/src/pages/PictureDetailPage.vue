@@ -214,9 +214,10 @@ const canDelete = createPermissionChecker(SPACE_PERMISSION_ENUM.PICTURE_DELETE)
 // 获取图片详情
 const fetchPictureDetail = async () => {
   try {
+    // 使用字符串形式的ID来避免JavaScript大整数精度问题
     const res = await getPictureVoByIdUsingGet({
       id: props.id,
-    })
+    } as any)
     if (res.data.code === 0 && res.data.data) {
       picture.value = res.data.data
     } else {
@@ -235,12 +236,12 @@ const router = useRouter()
 
 // 编辑
 const doEdit = () => {
+  if (!picture.value.id) {
+    message.error('图片ID不存在')
+    return
+  }
   router.push({
-    path: '/add_picture',
-    query: {
-      id: picture.value.id,
-      spaceId: picture.value.spaceId,
-    },
+    path: `/edit_picture/${String(picture.value.id)}`,
   })
 }
 

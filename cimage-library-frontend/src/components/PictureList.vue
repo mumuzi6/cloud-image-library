@@ -141,13 +141,14 @@ const doSearch = (picture: API.PictureVO, e: Event) => {
 const doEdit = (picture: API.PictureVO, e: Event) => {
   // 阻止冒泡
   e.stopPropagation()
-  // 跳转时一定要携带 spaceId
+  // 检查图片ID是否存在
+  if (!picture.id) {
+    message.error('图片ID不存在')
+    return
+  }
+  // 跳转到专门的编辑页面
   router.push({
-    path: '/add_picture',
-    query: {
-      id: picture.id,
-      spaceId: picture.spaceId,
-    },
+    path: `/edit_picture/${String(picture.id)}`,
   })
 }
 

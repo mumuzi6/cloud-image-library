@@ -162,7 +162,7 @@
                     </a-button>
                     <a-button 
                       type="link" 
-                      :href="`/add_picture?id=${record.id}`" 
+                      :href="`/edit_picture/${record.id}`" 
                       target="_blank"
                       class="edit-button"
                     >
