@@ -50,6 +50,14 @@ import java.awt.*;
 import java.io.IOException;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 /**
@@ -385,7 +393,7 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
     }
 
     /**
-     *
+     * 批量上传图片
      * @param pictureUploadByBatchRequest
      * @param loginUser
      * @return
@@ -397,56 +405,110 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         Integer count = pictureUploadByBatchRequest.getCount();
         ThrowUtils.throwIf(count > 30, ErrorCode.PARAMS_ERROR, "最多 30 条");
         // 名称前缀默认等于搜索关键词
-        String namePrefix = pictureUploadByBatchRequest.getNamePrefix();
-        if (StrUtil.isBlank(namePrefix)) {
-            namePrefix = searchText;
+        String tempNamePrefix = pictureUploadByBatchRequest.getNamePrefix();
+        if (StrUtil.isBlank(tempNamePrefix)) {
+            tempNamePrefix = searchText;
         }
+        final String namePrefix = tempNamePrefix;
+        
         // 抓取内容
         String fetchUrl = String.format("https://cn.bing.com/images/async?q=%s&mmasync=1", searchText);
         Document document;
         try {
-            document = Jsoup.connect(fetchUrl).get();
+            document = Jsoup.connect(fetchUrl)
+                    .timeout(10000) // 设置连接超时
+                    .get();
         } catch (IOException e) {
             log.error("获取页面失败", e);
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "获取页面失败");
         }
+        
         // 解析内容
         Element div = document.getElementsByClass("dgControl").first();
         if (ObjUtil.isEmpty(div)) {
             throw new BusinessException(ErrorCode.OPERATION_ERROR, "获取元素失败");
         }
         Elements imgElementList = div.select("img.mimg");
+        
+        // 创建线程池进行并行处理
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                3, // 核心线程数
+                5, // 最大线程数
+                60L, TimeUnit.SECONDS, // 空闲时间
+                new LinkedBlockingQueue<>(100), // 队列容量
+                new ThreadFactory() {
+                    private final AtomicInteger threadNumber = new AtomicInteger(1);
+                    @Override
+                    public Thread newThread(Runnable r) {
+                        Thread t = new Thread(r, "batch-upload-" + threadNumber.getAndIncrement());
+                        t.setDaemon(true);
+                        return t;
+                    }
+                }
+        );
+        
+        // 使用CompletableFuture进行并行处理
+        List<CompletableFuture<Boolean>> futures = new ArrayList<>();
+        AtomicInteger uploadCount = new AtomicInteger(0);
+        
         // 遍历元素，依次处理上传图片
-        int uploadCount = 0;
-        for (Element imgElement : imgElementList) {
+        for (int i = 0; i < Math.min(imgElementList.size(), count); i++) {
+            Element imgElement = imgElementList.get(i);
             String fileUrl = imgElement.attr("src");
             if (StrUtil.isBlank(fileUrl)) {
                 log.info("当前链接为空，已跳过：{}", fileUrl);
                 continue;
             }
+            
             // 处理图片的地址，防止转义或者和对象存储冲突的问题
-            // codefather.cn?kryos=dog，应该只保留 codefather.cn
             int questionMarkIndex = fileUrl.indexOf("?");
             if (questionMarkIndex > -1) {
                 fileUrl = fileUrl.substring(0, questionMarkIndex);
             }
-            // 上传图片
-            PictureUploadRequest pictureUploadRequest = new PictureUploadRequest();
-            pictureUploadRequest.setFileUrl(fileUrl);
-            pictureUploadRequest.setPicName(namePrefix + (uploadCount + 1));
+            
+            final String finalFileUrl = fileUrl;
+            final int index = i + 1;
+            
+            // 异步处理单个图片上传
+            CompletableFuture<Boolean> future = CompletableFuture.supplyAsync(() -> {
+                try {
+                    PictureUploadRequest pictureUploadRequest = new PictureUploadRequest();
+                    pictureUploadRequest.setFileUrl(finalFileUrl);
+                    pictureUploadRequest.setPicName(namePrefix + index);
+                    
+                    PictureVO pictureVO = this.uploadPicture(finalFileUrl, pictureUploadRequest, loginUser);
+                    log.info("图片上传成功，id = {}", pictureVO.getId());
+                    uploadCount.incrementAndGet();
+                    return true;
+                } catch (Exception e) {
+                    log.error("图片上传失败，URL: {}", finalFileUrl, e);
+                    return false;
+                }
+            }, executor);
+            
+            futures.add(future);
+        }
+        
+        // 等待所有任务完成，设置超时时间
+        try {
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+                    .get(50, TimeUnit.SECONDS); // 50秒超时
+        } catch (Exception e) {
+            log.error("批量上传任务执行异常", e);
+        } finally {
+            // 关闭线程池
+            executor.shutdown();
             try {
-                PictureVO pictureVO = this.uploadPicture(fileUrl, pictureUploadRequest, loginUser);
-                log.info("图片上传成功，id = {}", pictureVO.getId());
-                uploadCount++;
-            } catch (Exception e) {
-                log.error("图片上传失败", e);
-                continue;
-            }
-            if (uploadCount >= count) {
-                break;
+                if (!executor.awaitTermination(10, TimeUnit.SECONDS)) {
+                    executor.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executor.shutdownNow();
+                Thread.currentThread().interrupt();
             }
         }
-        return uploadCount;
+        
+        return uploadCount.get();
     }
 
     @Async

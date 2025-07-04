@@ -4,8 +4,8 @@
       <!-- 页面头部 -->
       <div class="page-header">
         <h2 class="page-title">
-          {{ route.query?.id ? '修改' : '创建' }} {{ SPACE_TYPE_MAP[spaceType] }}
-        </h2>
+      {{ route.query?.id ? '修改' : '创建' }} {{ SPACE_TYPE_MAP[spaceType] }}
+    </h2>
       </div>
 
       <!-- 表单区域 -->
@@ -19,7 +19,7 @@
             @finish="handleSubmit"
             class="modern-form"
           >
-            <a-form-item name="spaceName" label="空间名称">
+      <a-form-item name="spaceName" label="空间名称">
               <a-input 
                 v-model:value="spaceForm.spaceName" 
                 placeholder="请输入空间名称" 
@@ -27,18 +27,18 @@
                 size="large"
                 class="modern-input"
               />
-            </a-form-item>
-            <a-form-item name="spaceLevel" label="空间级别">
-              <a-select
-                v-model:value="spaceForm.spaceLevel"
-                placeholder="请选择空间级别"
-                :options="SPACE_LEVEL_OPTIONS"
-                allow-clear
+      </a-form-item>
+      <a-form-item name="spaceLevel" label="空间级别">
+        <a-select
+          v-model:value="spaceForm.spaceLevel"
+          placeholder="请选择空间级别"
+          :options="SPACE_LEVEL_OPTIONS"
+          allow-clear
                 size="large"
                 class="modern-select"
-              />
-            </a-form-item>
-            <a-form-item>
+        />
+      </a-form-item>
+      <a-form-item>
               <a-button 
                 type="primary" 
                 html-type="submit" 
@@ -47,13 +47,13 @@
                 class="submit-button"
               >
                 {{ route.query?.id ? '保存修改' : '创建空间' }}
-              </a-button>
-            </a-form-item>
-          </a-form>
+        </a-button>
+      </a-form-item>
+    </a-form>
         </div>
       </div>
 
-      <!-- 空间级别介绍 -->
+    <!-- 空间级别介绍 -->
       <div class="info-section">
         <div class="info-card">
           <div class="card-header">

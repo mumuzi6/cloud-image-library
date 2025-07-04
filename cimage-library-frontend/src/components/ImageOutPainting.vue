@@ -1,7 +1,7 @@
 <template>
   <a-modal
     class="image-out-painting"
-    v-model:visible="visible"
+    v-model:open="visible"
     title="AI 扩图"
     :footer="false"
     @cancel="closeModal"
