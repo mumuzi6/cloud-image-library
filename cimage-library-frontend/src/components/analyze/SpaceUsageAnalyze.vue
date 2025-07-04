@@ -31,7 +31,7 @@ import { formatSize } from '@/utils'
 interface Props {
   queryAll?: boolean
   queryPublic?: boolean
-  spaceId?: number
+  spaceId?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -69,4 +69,50 @@ watchEffect(() => {
 })
 </script>
 
-<style scoped></style>
+<style scoped>
+.space-user-analyze {
+  height: 100%;
+}
+
+.space-user-analyze :deep(.ant-card) {
+  height: 100%;
+}
+
+.space-user-analyze :deep(.ant-card-head-title) {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+}
+
+.space-user-analyze :deep(.ant-card-body) {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.space-user-analyze :deep(.ant-flex) {
+  width: 100%;
+  height: 100%;
+}
+
+@media (max-width: 768px) {
+  .space-user-analyze :deep(.ant-card-head-title) {
+    font-size: 14px;
+  }
+  
+  .space-user-analyze :deep(.ant-card-body) {
+    padding: 16px;
+  }
+  
+  .space-user-analyze :deep(.ant-flex) {
+    flex-direction: column;
+  }
+  
+  .space-user-analyze :deep(.ant-card) {
+    width: 100% !important;
+    margin-bottom: 16px;
+  }
+}
+</style>

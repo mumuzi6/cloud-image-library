@@ -1,6 +1,6 @@
 <template>
   <div class="space-tag-analyze">
-    <a-card title="空间图片标签分析">
+    <a-card title="标签分析">
       <v-chart :option="options" style="height: 320px; max-width: 100%" :loading="loading" />
     </a-card>
   </div>
@@ -17,7 +17,7 @@ import { message } from 'ant-design-vue'
 interface Props {
   queryAll?: boolean
   queryPublic?: boolean
-  spaceId?: number
+  spaceId?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -86,4 +86,33 @@ const options =computed(() => {
 })
 </script>
 
-<style scoped></style>
+<style scoped>
+.space-tag-analyze {
+  height: 100%;
+}
+
+.space-tag-analyze :deep(.ant-card) {
+  height: 100%;
+}
+
+.space-tag-analyze :deep(.ant-card-head-title) {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+}
+
+.space-tag-analyze :deep(.ant-card-body) {
+  padding: 20px;
+}
+
+@media (max-width: 768px) {
+  .space-tag-analyze :deep(.ant-card-head-title) {
+    font-size: 14px;
+  }
+  
+  .space-tag-analyze :deep(.ant-card-body) {
+    padding: 16px;
+  }
+}
+</style>

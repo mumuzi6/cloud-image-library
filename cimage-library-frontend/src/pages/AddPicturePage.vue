@@ -160,7 +160,7 @@ const uploadType = ref<'file' | 'url'>('file')
 // 空间 id
 const spaceId = computed(() => {
   const id = route.query?.spaceId
-  return typeof id === 'string' ? Number(id) : undefined
+  return typeof id === 'string' ? id : undefined
 })
 
 /**
@@ -236,7 +236,7 @@ const getOldPicture = async () => {
   const id = route.query?.id
   if (id && typeof id === 'string') {
     const res = await getPictureVoByIdUsingGet({
-      id: Number(id),
+      id: id,
     })
     if (res.data.code === 0 && res.data.data) {
       const data = res.data.data

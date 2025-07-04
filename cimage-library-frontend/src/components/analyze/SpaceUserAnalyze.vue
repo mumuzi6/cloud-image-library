@@ -1,6 +1,6 @@
 <template>
   <div class="space-user-analyze">
-    <a-card title="空间图片用户分析">
+    <a-card title="用户上传分析">
       <v-chart :option="options" style="height: 320px; max-width: 100%" :loading="loading" />
       <template #extra>
         <a-space>
@@ -22,7 +22,7 @@ import { message } from 'ant-design-vue'
 interface Props {
   queryAll?: boolean
   queryPublic?: boolean
-  spaceId?: number
+  spaceId?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -54,7 +54,7 @@ const doSearch = (value: string) => {
 }
 
 // 图表数据
-const dataList = ref<API.SpaceCategoryAnalyzeResponse>([])
+const dataList = ref<API.SpaceUserAnalyzeResponse[]>([])
 // 加载状态
 const loading = ref(true)
 
@@ -67,7 +67,7 @@ const fetchData = async () => {
     queryPublic: props.queryPublic,
     spaceId: props.spaceId,
     timeDimension: timeDimension.value,
-    userId: userId.value,
+    userId: userId.value ? Number(userId.value) : undefined,
   })
   if (res.data.code === 0 && res.data.data) {
     dataList.value = res.data.data ?? []
@@ -86,8 +86,8 @@ watchEffect(() => {
 
 // 图表选项
 const options = computed(() => {
-  const periods = dataList.value.map((item) => item.period) // 时间区间
-  const counts = dataList.value.map((item) => item.count) // 上传数量
+  const periods = dataList.value.map((item: any) => item.period) // 时间区间
+  const counts = dataList.value.map((item: any) => item.count) // 上传数量
 
   return {
     tooltip: { trigger: 'axis' },
@@ -108,4 +108,69 @@ const options = computed(() => {
 })
 </script>
 
-<style scoped></style>
+<style scoped>
+.space-user-analyze {
+  height: 100%;
+}
+
+.space-user-analyze :deep(.ant-card) {
+  height: 100%;
+}
+
+.space-user-analyze :deep(.ant-card-head) {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.space-user-analyze :deep(.ant-card-head-title) {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1f2937;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.space-user-analyze :deep(.ant-card-extra) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.space-user-analyze :deep(.ant-card-body) {
+  padding: 20px;
+}
+
+.space-user-analyze :deep(.ant-segmented) {
+  font-size: 12px;
+}
+
+.space-user-analyze :deep(.ant-input-search) {
+  max-width: 200px;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .space-user-analyze :deep(.ant-card-head) {
+    padding: 12px 16px;
+  }
+  
+  .space-user-analyze :deep(.ant-card-head-title) {
+    font-size: 14px;
+  }
+  
+  .space-user-analyze :deep(.ant-card-extra) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .space-user-analyze :deep(.ant-input-search) {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .space-user-analyze :deep(.ant-card-body) {
+    padding: 16px;
+  }
+}
+</style>
