@@ -28,6 +28,17 @@
                 class="modern-input"
               />
       </a-form-item>
+      
+      <!-- 编辑模式下显示空间类型（只读） -->
+      <a-form-item v-if="route.query?.id && space && space.spaceType !== undefined" label="空间类型">
+        <a-input 
+          :value="SPACE_TYPE_MAP[space.spaceType as keyof typeof SPACE_TYPE_MAP]" 
+          disabled
+          size="large"
+          class="modern-input"
+        />
+      </a-form-item>
+      
       <a-form-item name="spaceLevel" label="空间级别">
         <a-select
           v-model:value="spaceForm.spaceLevel"
@@ -116,6 +127,11 @@ const loading = ref(false)
 const route = useRoute()
 // 空间类别，默认为私有空间
 const spaceType = computed(() => {
+  // 编辑模式下，如果已获取到空间数据，使用空间的实际类型
+  if (route.query?.id && space.value?.spaceType !== undefined) {
+    return space.value.spaceType
+  }
+  // 创建模式下，使用query参数中的type
   if (route.query?.type) {
     return Number(route.query.type)
   } else {
@@ -181,7 +197,7 @@ const getOldSpace = async () => {
   const id = route.query?.id
   if (id && typeof id === 'string') {
     const res = await getSpaceVoByIdUsingGet({
-      id: Number(id),
+      id: id,  // 直接使用字符串，不转换为数字避免精度丢失
     })
     if (res.data.code === 0 && res.data.data) {
       const data = res.data.data
