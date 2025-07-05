@@ -17,6 +17,7 @@ import com.kryos.cloudImagebackend.model.vo.UserVO;
 import com.kryos.cloudImagebackend.service.UserService;
 import org.springframework.beans.BeanUtils;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
@@ -175,5 +176,55 @@ public class UserController {
         boolean result = userService.exchangeVip(loginUser, vipCode);
         return ResultUtils.success(result);
     }
+
+    // region ------- 以下代码为用户个人信息管理功能 --------
+
+    /**
+     * 获取当前用户详细信息
+     */
+    @GetMapping("/get/profile")
+    public BaseResponse<UserVO> getCurrentUserProfile(HttpServletRequest request) {
+        User loginUser = userService.getLoginUser(request);
+        UserVO userVO = userService.getUserVO(loginUser);
+        return ResultUtils.success(userVO);
+    }
+
+    /**
+     * 更新当前用户信息
+     */
+    @PostMapping("/update/profile")
+    public BaseResponse<Boolean> updateCurrentUserProfile(@RequestBody UserUpdateProfileRequest request,
+                                                          HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        boolean result = userService.updateUserProfile(loginUser.getId(), request);
+        return ResultUtils.success(result);
+    }
+
+    /**
+     * 上传用户头像
+     */
+    @PostMapping("/upload/avatar")
+    public BaseResponse<String> uploadUserAvatar(@RequestParam("file") MultipartFile file,
+                                                HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(file == null || file.isEmpty(), ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        String avatarUrl = userService.uploadUserAvatar(loginUser.getId(), file);
+        return ResultUtils.success(avatarUrl);
+    }
+
+    /**
+     * 修改密码
+     */
+    @PostMapping("/update/password")
+    public BaseResponse<Boolean> updatePassword(@RequestBody UserUpdatePasswordRequest request,
+                                               HttpServletRequest httpServletRequest) {
+        ThrowUtils.throwIf(request == null, ErrorCode.PARAMS_ERROR);
+        User loginUser = userService.getLoginUser(httpServletRequest);
+        boolean result = userService.updatePassword(loginUser.getId(), request);
+        return ResultUtils.success(result);
+    }
+
+    // endregion ------- 以上代码为用户个人信息管理功能 --------
 
 }

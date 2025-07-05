@@ -14,7 +14,11 @@ import com.kryos.cloudImagebackend.constant.UserConstant;
 import com.kryos.cloudImagebackend.exception.BusinessException;
 import com.kryos.cloudImagebackend.exception.ErrorCode;
 import com.kryos.cloudImagebackend.manager.auth.StpKit;
+import com.kryos.cloudImagebackend.manager.upload.FilePictureUpload;
+import com.kryos.cloudImagebackend.model.dto.file.UploadPictureResult;
 import com.kryos.cloudImagebackend.model.dto.user.UserQueryRequest;
+import com.kryos.cloudImagebackend.model.dto.user.UserUpdateProfileRequest;
+import com.kryos.cloudImagebackend.model.dto.user.UserUpdatePasswordRequest;
 import com.kryos.cloudImagebackend.model.dto.user.VipCode;
 import com.kryos.cloudImagebackend.model.entity.User;
 import com.kryos.cloudImagebackend.model.enums.UserRoleEnum;
@@ -28,6 +32,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -36,6 +41,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -248,8 +254,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     @Autowired
     private ResourceLoader resourceLoader;
 
+    @Autowired
+    private FilePictureUpload filePictureUpload;
+
     // 文件读写锁（确保并发安全）
     private final ReentrantLock fileLock = new ReentrantLock();
+    
+    // 用户操作锁（防止同一用户的并发操作）
+    private final ConcurrentHashMap<Long, ReentrantLock> userLockMap = new ConcurrentHashMap<>();
 
     // VIP 角色常量（根据你的需求自定义）
     private static final String VIP_ROLE = "vip";
@@ -350,6 +362,186 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User>
     }
 
     // endregion ------- 以下代码为用户兑换会员功能 --------
+
+    // region ------- 以下代码为用户个人信息管理功能 --------
+
+    /**
+     * 更新用户个人资料
+     *
+     * @param userId 用户ID
+     * @param request 更新请求
+     * @return 是否成功
+     */
+    @Override
+    public boolean updateUserProfile(Long userId, UserUpdateProfileRequest request) {
+        // 1. 参数校验
+        if (userId == null || request == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        
+        // 2. 校验用户是否存在
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在");
+        }
+        
+        // 3. 构建更新对象
+        User updateUser = new User();
+        updateUser.setId(userId);
+        
+        // 4. 只更新非空字段
+        if (StrUtil.isNotBlank(request.getUserName())) {
+            updateUser.setUserName(request.getUserName());
+        }
+        if (StrUtil.isNotBlank(request.getUserAvatar())) {
+            updateUser.setUserAvatar(request.getUserAvatar());
+        }
+        if (StrUtil.isNotBlank(request.getUserProfile())) {
+            updateUser.setUserProfile(request.getUserProfile());
+        }
+        
+        // 5. 执行更新
+        boolean result = this.updateById(updateUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "更新用户信息失败");
+        }
+        
+        return true;
+    }
+
+    /**
+     * 更新用户密码
+     *
+     * @param userId 用户ID
+     * @param request 修改密码请求
+     * @return 是否成功
+     */
+    @Override
+    public boolean updatePassword(Long userId, UserUpdatePasswordRequest request) {
+        // 1. 参数校验
+        if (userId == null || request == null) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        
+        String oldPassword = request.getOldPassword();
+        String newPassword = request.getNewPassword();
+        String confirmPassword = request.getConfirmPassword();
+        
+        if (StrUtil.hasBlank(oldPassword, newPassword, confirmPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "密码参数为空");
+        }
+        
+        if (newPassword.length() < 8) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "新密码长度不能小于8位");
+        }
+        
+        if (!newPassword.equals(confirmPassword)) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "两次输入的新密码不一致");
+        }
+        
+        // 2. 校验用户是否存在
+        User user = this.getById(userId);
+        if (user == null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在");
+        }
+        
+        // 3. 校验旧密码是否正确
+        String encryptOldPassword = getEncryptPassword(oldPassword);
+        if (!encryptOldPassword.equals(user.getUserPassword())) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "原密码错误");
+        }
+        
+        // 4. 更新密码
+        String encryptNewPassword = getEncryptPassword(newPassword);
+        User updateUser = new User();
+        updateUser.setId(userId);
+        updateUser.setUserPassword(encryptNewPassword);
+        
+        boolean result = this.updateById(updateUser);
+        if (!result) {
+            throw new BusinessException(ErrorCode.OPERATION_ERROR, "修改密码失败");
+        }
+        
+        return true;
+    }
+
+    /**
+     * 获取用户操作锁
+     *
+     * @param userId 用户ID
+     * @return 用户锁
+     */
+    private ReentrantLock getUserLock(Long userId) {
+        return userLockMap.computeIfAbsent(userId, k -> new ReentrantLock());
+    }
+
+    /**
+     * 上传用户头像
+     *
+     * @param userId 用户ID
+     * @param file 头像文件
+     * @return 头像URL
+     */
+    @Override
+    public String uploadUserAvatar(Long userId, MultipartFile file) {
+        // 1. 参数校验
+        if (userId == null || file == null || file.isEmpty()) {
+            throw new BusinessException(ErrorCode.PARAMS_ERROR, "参数为空");
+        }
+        
+        // 2. 获取用户锁，防止并发操作
+        ReentrantLock userLock = getUserLock(userId);
+        userLock.lock();
+        try {
+            // 3. 校验用户是否存在
+            User user = this.getById(userId);
+            if (user == null) {
+                throw new BusinessException(ErrorCode.NOT_FOUND_ERROR, "用户不存在");
+            }
+            
+            // 4. 校验文件格式
+            String originalFilename = file.getOriginalFilename();
+            if (StrUtil.isBlank(originalFilename)) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件名为空");
+            }
+            
+            String suffix = originalFilename.substring(originalFilename.lastIndexOf(".")).toLowerCase();
+            if (!suffix.matches("\\.(jpg|jpeg|png|gif|bmp)$")) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "不支持的文件格式，只支持jpg、jpeg、png、gif、bmp");
+            }
+            
+            // 5. 校验文件大小（限制为5MB）
+            long maxSize = 5 * 1024 * 1024;
+            if (file.getSize() > maxSize) {
+                throw new BusinessException(ErrorCode.PARAMS_ERROR, "文件大小不能超过5MB");
+            }
+            
+            // 6. 使用现有的文件上传服务
+            try {
+                UploadPictureResult uploadResult = filePictureUpload.uploadPicture(file, "avatar");
+                String avatarUrl = uploadResult.getUrl();
+                
+                // 7. 更新用户头像信息
+                User updateUser = new User();
+                updateUser.setId(userId);
+                updateUser.setUserAvatar(avatarUrl);
+                
+                boolean result = this.updateById(updateUser);
+                if (!result) {
+                    throw new BusinessException(ErrorCode.OPERATION_ERROR, "更新头像失败");
+                }
+                
+                return avatarUrl;
+            } catch (Exception e) {
+                log.error("上传头像失败", e);
+                throw new BusinessException(ErrorCode.SYSTEM_ERROR, "上传头像失败: " + e.getMessage());
+            }
+        } finally {
+            userLock.unlock();
+        }
+    }
+
+    // endregion ------- 以上代码为用户个人信息管理功能 --------
 }
 
 

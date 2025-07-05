@@ -149,3 +149,56 @@ export async function updateUserUsingPost(
     ...(options || {}),
   })
 }
+
+/** getCurrentUserProfile GET /api/user/get/profile */
+export async function getCurrentUserProfileUsingGet(options?: { [key: string]: any }) {
+  return request<API.BaseResponseUserVO_>('/api/user/get/profile', {
+    method: 'GET',
+    ...(options || {}),
+  })
+}
+
+/** updateCurrentUserProfile POST /api/user/update/profile */
+export async function updateCurrentUserProfileUsingPost(
+  body: any,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean_>('/api/user/update/profile', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}
+
+/** uploadUserAvatar POST /api/user/upload/avatar */
+export async function uploadUserAvatarUsingPost(
+  file: File,
+  options?: { [key: string]: any }
+) {
+  const formData = new FormData()
+  formData.append('file', file)
+  
+  return request<API.BaseResponseString_>('/api/user/upload/avatar', {
+    method: 'POST',
+    data: formData,
+    ...(options || {}),
+  })
+}
+
+/** updatePassword POST /api/user/update/password */
+export async function updatePasswordUsingPost(
+  body: any,
+  options?: { [key: string]: any }
+) {
+  return request<API.BaseResponseBoolean_>('/api/user/update/password', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    data: body,
+    ...(options || {}),
+  })
+}

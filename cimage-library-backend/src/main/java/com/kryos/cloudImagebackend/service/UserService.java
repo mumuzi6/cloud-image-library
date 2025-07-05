@@ -2,10 +2,13 @@ package com.kryos.cloudImagebackend.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.kryos.cloudImagebackend.model.dto.user.UserQueryRequest;
+import com.kryos.cloudImagebackend.model.dto.user.UserUpdateProfileRequest;
+import com.kryos.cloudImagebackend.model.dto.user.UserUpdatePasswordRequest;
 import com.kryos.cloudImagebackend.model.entity.User;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.kryos.cloudImagebackend.model.vo.LoginUserVO;
 import com.kryos.cloudImagebackend.model.vo.UserVO;
+import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -104,4 +107,31 @@ public interface UserService extends IService<User> {
      * 用户兑换会员（会员码兑换）
      */
     boolean exchangeVip(User user, String vipCode);
+
+    /**
+     * 更新用户个人资料
+     *
+     * @param userId 用户ID
+     * @param request 更新请求
+     * @return 是否成功
+     */
+    boolean updateUserProfile(Long userId, UserUpdateProfileRequest request);
+
+    /**
+     * 更新用户密码
+     *
+     * @param userId 用户ID
+     * @param request 修改密码请求
+     * @return 是否成功
+     */
+    boolean updatePassword(Long userId, UserUpdatePasswordRequest request);
+
+    /**
+     * 上传用户头像
+     *
+     * @param userId 用户ID
+     * @param file 头像文件
+     * @return 头像URL
+     */
+    String uploadUserAvatar(Long userId, MultipartFile file);
 }

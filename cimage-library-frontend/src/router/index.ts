@@ -2,6 +2,9 @@ import {createRouter, createWebHistory} from 'vue-router'
 import HomePage from '@/pages/HomePage.vue'
 import UserLoginPage from '@/pages/user/UserLoginPage.vue'
 import UserRegisterPage from '@/pages/user/UserRegisterPage.vue'
+import UserProfilePage from '@/pages/user/UserProfilePage.vue'
+import UserEditPage from '@/pages/user/UserEditPage.vue'
+import UserSecurityPage from '@/pages/user/UserSecurityPage.vue'
 import UserManagePage from '@/pages/admin/UserManagePage.vue'
 import AddPicturePage from '@/pages/AddPicturePage.vue'
 import EditPicturePage from '@/pages/EditPicturePage.vue'
@@ -109,6 +112,21 @@ const router = createRouter({
       path: '/user_exchange_vip',
       name: '用户兑换会员',
       component: UserExchangeVipPage,
+    },
+    {
+      path: '/user/profile',
+      name: '用户中心',
+      component: UserProfilePage,
+    },
+    {
+      path: '/user/edit',
+      name: '编辑资料',
+      component: UserEditPage,
+    },
+    {
+      path: '/user/security',
+      name: '账户安全',
+      component: UserSecurityPage,
     },
     {
       path: '/about',
