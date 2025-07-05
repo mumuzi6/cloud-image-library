@@ -71,7 +71,13 @@
       </div>
 
       <!-- 图片列表 -->
-      <PictureList :dataList="dataList" :loading="loading" />
+      <PictureList 
+        :dataList="dataList" 
+        :loading="loading" 
+        :showOp="true"
+        :canEdit="false"
+        :canDelete="false"
+      />
       
       <!-- 分页 -->
       <div class="pagination-container">

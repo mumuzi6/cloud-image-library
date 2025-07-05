@@ -148,6 +148,19 @@
               </a-button>
             </div>
             
+            <div class="search-actions">
+              <a-button 
+                :icon="h(SearchOutlined)" 
+                type="default" 
+                size="large"
+                @click="doSearchSimilar"
+                class="search-btn"
+                block
+              >
+                以图搜图
+              </a-button>
+            </div>
+            
             <div class="secondary-actions" v-if="canEdit || canDelete">
               <a-button 
                 v-if="canEdit" 
@@ -186,6 +199,7 @@ import {
   DeleteOutlined,
   DownloadOutlined,
   EditOutlined,
+  SearchOutlined,
   ShareAltOutlined,
 } from '@ant-design/icons-vue'
 import { useRouter } from 'vue-router'
@@ -274,6 +288,16 @@ const doShare = () => {
   if (shareModalRef.value) {
     shareModalRef.value.openModal()
   }
+}
+
+// 以图搜图
+const doSearchSimilar = () => {
+  if (!picture.value.id) {
+    message.error('图片ID不存在')
+    return
+  }
+  // 在新窗口打开以图搜图页面
+  window.open(`/search_picture?pictureId=${picture.value.id}`)
 }
 </script>
 
@@ -602,6 +626,27 @@ const doShare = () => {
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
 }
 
+.search-actions {
+  margin-bottom: 16px;
+}
+
+.search-btn {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: white !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  height: 44px;
+  border-radius: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: all 0.3s ease;
+}
+
+.search-btn:hover {
+  background: rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2) !important;
+}
+
 .secondary-actions {
   display: flex;
   gap: 12px;
@@ -646,6 +691,10 @@ const doShare = () => {
   
   .primary-actions {
     flex-direction: column;
+  }
+  
+  .search-actions {
+    margin-bottom: 12px;
   }
   
   .secondary-actions {

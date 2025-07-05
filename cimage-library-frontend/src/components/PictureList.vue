@@ -17,15 +17,19 @@
               class="picture-image"
               loading="lazy"
             />
-            <!-- 悬浮操作按钮 -->
-            <div v-if="showOp" class="action-overlay">
+            <!-- 基础操作按钮 - 始终显示 -->
+            <div v-if="showOp" class="basic-actions">
+              <div class="basic-action-btn" @click="(e) => doShare(picture, e)" title="分享">
+                <ShareAltOutlined />
+              </div>
+              <div class="basic-action-btn" @click="(e) => doSearch(picture, e)" title="以图搜图">
+                <SearchOutlined />
+              </div>
+            </div>
+            
+            <!-- 高级操作按钮 - 悬浮显示 -->
+            <div v-if="showOp && (canEdit || canDelete)" class="action-overlay">
               <div class="action-buttons">
-                <div class="action-btn" @click="(e) => doShare(picture, e)" title="分享">
-                  <ShareAltOutlined />
-                </div>
-                <div class="action-btn" @click="(e) => doSearch(picture, e)" title="搜索相似">
-                  <SearchOutlined />
-                </div>
                 <div v-if="canEdit" class="action-btn edit-btn" @click="(e) => doEdit(picture, e)" title="编辑">
                   <EditOutlined />
                 </div>
@@ -133,6 +137,10 @@ const doClickPicture = (picture: API.PictureVO) => {
 const doSearch = (picture: API.PictureVO, e: Event) => {
   // 阻止冒泡
   e.stopPropagation()
+  if (!picture.id) {
+    message.error('图片ID不存在')
+    return
+  }
   // 打开新的页面
   window.open(`/search_picture?pictureId=${picture.id}`)
 }
@@ -177,6 +185,10 @@ const shareLink = ref<string>()
 const doShare = (picture: API.PictureVO, e: Event) => {
   // 阻止冒泡
   e.stopPropagation()
+  if (!picture.id) {
+    message.error('图片ID不存在')
+    return
+  }
   shareLink.value = `${window.location.protocol}//${window.location.host}/picture/${picture.id}`
   if (shareModalRef.value) {
     shareModalRef.value.openModal()
@@ -338,6 +350,50 @@ const doShare = (picture: API.PictureVO, e: Event) => {
 .action-btn.delete-btn:hover {
   background: rgba(255, 59, 48, 0.25);
   border-color: rgba(255, 59, 48, 0.4);
+}
+
+/* 基础操作按钮样式 */
+.basic-actions {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  gap: 8px;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.picture-card:hover .basic-actions {
+  opacity: 1;
+}
+
+.basic-action-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #4a5568;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(0.9);
+}
+
+.picture-card:hover .basic-action-btn {
+  transform: scale(1);
+}
+
+.basic-action-btn:hover {
+  background: rgba(102, 126, 234, 0.9);
+  color: white;
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
 }
 
 /* 图片信息区域 */
