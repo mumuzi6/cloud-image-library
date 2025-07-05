@@ -83,13 +83,15 @@
               共 {{ total }} 条记录
             </div>
           </div>
-          <a-table
-            :columns="columns"
-            :data-source="dataList"
-            :pagination="pagination"
-            @change="doTableChange"
-            class="modern-table"
-          >
+          <div class="table-scroll-container">
+            <a-table
+              :columns="columns"
+              :data-source="dataList"
+              :pagination="pagination"
+              @change="doTableChange"
+              class="modern-table"
+              size="middle"
+            >
             <template #bodyCell="{ column, record }">
               <template v-if="column.dataIndex === 'spaceLevel'">
                 <a-tag color="blue" class="level-tag">
@@ -99,10 +101,10 @@
               <!-- 空间类别 -->
               <template v-if="column.dataIndex === 'spaceType'">
                 <a-tag 
-                  :color="record.spaceType === 0 ? 'green' : record.spaceType === 1 ? 'purple' : 'orange'"
+                  :color="record.spaceType === 0 ? 'purple' : record.spaceType === 1 ? 'orange' : 'green'"
                   class="type-tag"
                 >
-                  {{ record.spaceType === 0 ? '🌍 公共' : record.spaceType === 1 ? '🔒 私有' : '👥 团队' }}
+                  {{ record.spaceType === 0 ? '🔒 私有空间' : record.spaceType === 1 ? '👥 团队空间' : '未知类型' }}
                 </a-tag>
               </template>
               <template v-if="column.dataIndex === 'spaceUseInfo'">
@@ -161,6 +163,7 @@
               </template>
             </template>
           </a-table>
+          </div>
         </div>
       </div>
     </div>
@@ -480,10 +483,41 @@ const doDelete = async (id: string) => {
   font-weight: 500;
 }
 
+/* 表格容器样式 */
+.table-scroll-container {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  border-radius: 12px;
+  /* 美化滚动条 */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(102, 126, 234, 0.3) transparent;
+}
+
+.table-scroll-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-scroll-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb {
+  background: rgba(102, 126, 234, 0.3);
+  border-radius: 4px;
+  transition: background 0.3s ease;
+}
+
+.table-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(102, 126, 234, 0.5);
+}
+
 /* 表格样式 */
 .modern-table :deep(.ant-table) {
   border-radius: 12px;
   overflow: hidden;
+  min-width: 1200px; /* 确保表格有足够的宽度触发横向滚动 */
 }
 
 .modern-table :deep(.ant-table-thead > tr > th) {
@@ -622,8 +656,12 @@ const doDelete = async (id: string) => {
     margin-bottom: 12px;
   }
   
-  .modern-table {
-    overflow-x: auto;
+  .table-scroll-container {
+    border-radius: 8px;
+  }
+  
+  .modern-table :deep(.ant-table) {
+    min-width: 800px; /* 移动端减少最小宽度 */
   }
 }
 </style>

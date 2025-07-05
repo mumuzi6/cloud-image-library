@@ -11,7 +11,7 @@
             <span v-if="queryAll" class="subtitle-tag all">📈 全部空间</span>
             <span v-else-if="queryPublic" class="subtitle-tag public">🌍 公共图库</span>
             <span v-else class="subtitle-tag private">
-              🏠 <a :href="`/space/${spaceId}`" target="_blank" class="space-link">空间 ID：{{ spaceId }}</a>
+              {{ getSpaceTypeIcon() }} <a :href="`/space/${spaceId}`" target="_blank" class="space-link">空间 ID：{{ spaceId }}</a>
             </span>
           </div>
           <p class="page-description">深入了解空间使用情况，优化存储策略</p>
@@ -22,7 +22,7 @@
             <div class="stat-info">
               <div class="stat-label">分析类型</div>
               <div class="stat-value">
-                {{ queryAll ? '全部空间' : queryPublic ? '公共图库' : '私有空间' }}
+                {{ getAnalysisType() }}
               </div>
             </div>
           </div>
@@ -123,8 +123,9 @@ import SpaceSizeAnalyze from '@/components/analyze/SpaceSizeAnalyze.vue'
 import SpaceUserAnalyze from '@/components/analyze/SpaceUserAnalyze.vue'
 import SpaceRankAnalyze from '@/components/analyze/SpaceRankAnalyze.vue'
 import { useRoute } from 'vue-router'
-import { computed } from 'vue'
+import { computed, ref, onMounted } from 'vue'
 import { useLoginUserStore } from '@/stores/useLoginUserStore.ts'
+import { getSpaceByIdUsingGet } from '@/api/spaceController.ts'
 
 const route = useRoute()
 
@@ -148,6 +149,50 @@ const loginUserStore = useLoginUserStore()
 const loginUser = loginUserStore.loginUser
 const isAdmin = computed(() => {
   return loginUser.userRole === 'admin'
+})
+
+// 空间信息
+const spaceInfo = ref<API.Space | null>(null)
+
+// 获取空间信息
+const fetchSpaceInfo = async () => {
+  if (!spaceId.value) return
+  
+  try {
+    const res = await getSpaceByIdUsingGet({ id: spaceId.value })
+    if (res.data.code === 0 && res.data.data) {
+      spaceInfo.value = res.data.data
+    }
+  } catch (error) {
+    console.error('获取空间信息失败:', error)
+  }
+}
+
+// 获取分析类型
+const getAnalysisType = () => {
+  if (queryAll.value) return '全部空间'
+  if (queryPublic.value) return '公共图库'
+  
+  if (spaceInfo.value) {
+    return spaceInfo.value.spaceType === 0 ? '私有空间' : '团队空间'
+  }
+  
+  return '私有空间' // 默认值
+}
+
+// 获取空间类型图标
+const getSpaceTypeIcon = () => {
+  if (spaceInfo.value) {
+    return spaceInfo.value.spaceType === 0 ? '🔒' : '👥'
+  }
+  return '🏠' // 默认图标
+}
+
+// 页面加载时获取空间信息
+onMounted(() => {
+  if (spaceId.value) {
+    fetchSpaceInfo()
+  }
 })
 </script>
 
