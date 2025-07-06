@@ -201,31 +201,53 @@ public class PictureServiceImpl extends ServiceImpl<PictureMapper, Picture>
         this.fillReviewParams(picture, loginUser);
         // 操作数据库
         // 如果 pictureId 不为空，表示更新，否则是新增
+        Picture oldPictureForCleanup = null;
         if (pictureId != null) {
             // 如果是更新，需要补充 id 和编辑时间
             picture.setId(pictureId);
             picture.setEditTime(new Date());
+            // 获取原图片信息，用于后续清理和额度计算
+            oldPictureForCleanup = this.getById(pictureId);
         }
         // 开启事务
         Long finalSpaceId = spaceId;
+        Picture finalOldPicture = oldPictureForCleanup;
         transactionTemplate.execute(status -> {
             // 插入数据
             boolean result = this.saveOrUpdate(picture);
             ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR, "图片上传失败，数据库操作失败");
             if (finalSpaceId != null) {
-                // 更新空间的使用额度
-                boolean update = spaceService.lambdaUpdate()
-                        .eq(Space::getId, finalSpaceId)
-                        .setSql("totalSize = totalSize + " + picture.getPicSize())
-                        .setSql("totalCount = totalCount + 1")
-                        .update();
-                ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR, "额度更新失败");
+                if (finalOldPicture != null) {
+                    // 更新操作：先减少原图片的额度，再增加新图片的额度
+                    boolean reduceUpdate = spaceService.lambdaUpdate()
+                            .eq(Space::getId, finalSpaceId)
+                            .setSql("totalSize = totalSize - " + finalOldPicture.getPicSize())
+                            .setSql("totalCount = totalCount - 1")
+                            .update();
+                    ThrowUtils.throwIf(!reduceUpdate, ErrorCode.OPERATION_ERROR, "原图片额度释放失败");
+                    
+                    boolean addUpdate = spaceService.lambdaUpdate()
+                            .eq(Space::getId, finalSpaceId)
+                            .setSql("totalSize = totalSize + " + picture.getPicSize())
+                            .setSql("totalCount = totalCount + 1")
+                            .update();
+                    ThrowUtils.throwIf(!addUpdate, ErrorCode.OPERATION_ERROR, "新图片额度更新失败");
+                } else {
+                    // 新增操作：直接增加额度
+                    boolean update = spaceService.lambdaUpdate()
+                            .eq(Space::getId, finalSpaceId)
+                            .setSql("totalSize = totalSize + " + picture.getPicSize())
+                            .setSql("totalCount = totalCount + 1")
+                            .update();
+                    ThrowUtils.throwIf(!update, ErrorCode.OPERATION_ERROR, "额度更新失败");
+                }
             }
             return picture;
         });
-        // todo
-        // 可自行实现，如果是更新，可以清理图片资源
-        // this.clearPictureFile(oldPicture);
+        // 如果是更新操作，异步清理原图片文件
+        if (oldPictureForCleanup != null) {
+            this.clearPictureFile(oldPictureForCleanup);
+        }
         return PictureVO.objToVo(picture);
     }
 
