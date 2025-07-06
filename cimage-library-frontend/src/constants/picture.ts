@@ -57,6 +57,8 @@ export const PICTURE_EDIT_ACTION_ENUM = {
   ZOOM_OUT: 'ZOOM_OUT',
   ROTATE_LEFT: 'ROTATE_LEFT',
   ROTATE_RIGHT: 'ROTATE_RIGHT',
+  ROTATE_CUSTOM: 'ROTATE_CUSTOM',
+  SCALE_RATIO: 'SCALE_RATIO',
 };
 
 /**
@@ -67,4 +69,6 @@ export const PICTURE_EDIT_ACTION_MAP = {
   ZOOM_OUT: '缩小操作',
   ROTATE_LEFT: '左旋操作',
   ROTATE_RIGHT: '右旋操作',
+  ROTATE_CUSTOM: '自定义角度旋转',
+  SCALE_RATIO: '等比例放大',
 };
