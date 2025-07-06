@@ -66,7 +66,7 @@ public class SpaceUserController {
         long id = deleteRequest.getId();
         // 判断是否存在
         SpaceUser oldSpaceUser = spaceUserService.getById(id);
-        ThrowUtils.throwIf(oldSpaceUser == null, ErrorCode.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(oldSpaceUser == null, ErrorCode.NOT_FOUND_ERROR, "空间成员不存在");
         // 操作数据库
         boolean result = spaceUserService.removeById(id);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
@@ -122,7 +122,16 @@ public class SpaceUserController {
         // 判断是否存在
         long id = spaceUserEditRequest.getId();
         SpaceUser oldSpaceUser = spaceUserService.getById(id);
-        ThrowUtils.throwIf(oldSpaceUser == null, ErrorCode.NOT_FOUND_ERROR);
+        ThrowUtils.throwIf(oldSpaceUser == null, ErrorCode.NOT_FOUND_ERROR, "空间成员不存在");
+        
+        // 检查角色是否有变化，如果角色一致则不需要更新
+        String newSpaceRole = spaceUserEditRequest.getSpaceRole();
+        String oldSpaceRole = oldSpaceUser.getSpaceRole();
+        if (ObjectUtil.equal(newSpaceRole, oldSpaceRole)) {
+            // 角色没有变化，直接返回成功
+            return ResultUtils.success(true);
+        }
+        
         // 操作数据库
         boolean result = spaceUserService.updateById(spaceUser);
         ThrowUtils.throwIf(!result, ErrorCode.OPERATION_ERROR);
